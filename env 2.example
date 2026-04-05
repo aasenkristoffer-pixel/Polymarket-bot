@@ -1,5 +1,0 @@
-# Rename this file to .env and fill in your credentials
-# NEVER upload your real .env file to GitHub
-
-PRIVATE_KEY=0xyour_private_key_here
-FUNDER_ADDRESS=0xyour_funder_address_here
