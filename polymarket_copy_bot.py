@@ -19,7 +19,7 @@ MAX_SZ=float(os.getenv("MAX_ORDER_SIZE","50.0"))
 SLIP=float(os.getenv("SLIPPAGE_PCT","0.02"))
 DRY=os.getenv("DRY_RUN","true").lower()=="true"
 app=FastAPI()
-app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_methods=["*"],allow_headers=["*"])
+app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_methods=["*"],allow_headers=["*"],allow_credentials=True,expose_headers=["*"])
 trades=[]
 orders={}
 class Signal(BaseModel):
