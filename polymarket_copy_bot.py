@@ -134,7 +134,7 @@ async def debug():
 async def get_leaderboard():
  try:
   async with httpx.AsyncClient(timeout=15) as c:
-   r=await c.get("https://data-api.polymarket.com/trades",params={"limit":500,"filterType":"CASH"})
+   r=await c.get("https://data-api.polymarket.com/trades",params={"limit":2000,"filterType":"CASH"})
    ts=r.json() if r.status_code==200 else []
    if not isinstance(ts,list):ts=[]
    wallets={}
