@@ -162,7 +162,7 @@ async function selectWallet(i){
  }catch(e){}
  if(!market){market={question:"Will Bitcoin exceed $90,000 before May 2026?",outcomePrices:["0.41","0.59"],volume:245000};}
  selectedMarket=market;
- const signal=await getSignal(w,market);
+ const signal=getSignal(w,market);
  renderSignal(w,market,signal);
 }
 
