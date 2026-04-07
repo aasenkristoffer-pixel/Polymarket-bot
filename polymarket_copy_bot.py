@@ -125,6 +125,14 @@ async def cancel(r:Cancel,x:Optional[str]=Header(None)):
     auth(x)
     if r.order_id in orders:orders[r.order_id]["status"]="cancelled"
     return {"ok":True,"cancelled":r.order_id}
+@app.get("/leaderboard")
+async def get_leaderboard():
+ try:
+  async with httpx.AsyncClient(timeout=15) as c:
+   r=await c.get("https://data-api.polymarket.com/leaderboard",params={"window":"1w","limit":20,"order":"profit"})
+   return{"ok":True,"wallets":r.json() if r.status_code==200 else [],"count":0}
+ except Exception as e:
+  return{"ok":False,"error":str(e),"wallets":[]}
 @app.get("/trades")
 async def get_trades(x:Optional[str]=Header(None)):
     auth(x)
