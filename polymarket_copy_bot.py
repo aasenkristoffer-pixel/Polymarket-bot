@@ -174,6 +174,19 @@ async def analyze(body:dict,x:Optional[str]=Header(None)):
    return json.loads(txt)
  except Exception as e:
   return{"action":"BUY_YES","confidence":0.72,"size_pct":8,"thesis":"Strong wallet momentum detected","risk":"MEDIUM","urgency":"WAIT"}
+@app.post("/sign")
+async def sign_order(body:dict,x:Optional[str]=Header(None)):
+ auth(x)
+ try:
+  from py_clob_client.client import ClobClient
+  from py_clob_client.clob_types import OrderArgs,BUY,SELL
+  cl=ClobClient(host=CLOB,key=PK,chain_id=137)
+  side=BUY if body.get("side")=="BUY" else SELL
+  oa=OrderArgs(token_id=body.get("token_id",""),price=float(body.get("price",0.5)),size=float(body.get("size",1)),side=side)
+  result=cl.create_and_post_order(oa)
+  return{"ok":True,"result":str(result)}
+ except Exception as e:
+  return{"ok":False,"error":str(e)}
 @app.get("/trades")
 async def get_trades(x:Optional[str]=Header(None)):
     auth(x)
