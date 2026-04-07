@@ -57,7 +57,8 @@ async def get_proxy_address(addr):
                 return d[0].get("proxyWallet",addr)
         return addr
 async def score(addr):
-    ts=await wallet_trades(addr)
+    proxy=await get_proxy_address(addr)
+    ts=await wallet_trades(proxy)
     w=t=0
     vol=pnl=0.0
     for x in ts:
