@@ -166,7 +166,20 @@ async function selectWallet(i){
  renderSignal(w,market,signal);
 }
 
-async function getSignal(wallet,market){
+function getSignal(wallet,market){
+ const wr=wallet.winRate;
+ const yesPrice=parseFloat(market.outcomePrices?.[0]||0.5);
+ const edge=wr-yesPrice;
+ let action,confidence,thesis,risk,urgency;
+ if(edge>0.15){action="BUY_YES";confidence=Math.min(0.95,wr);thesis="High edge vs market price detected";risk="LOW";urgency="IMMEDIATE";}
+ else if(edge>0.05){action="BUY_YES";confidence=Math.min(0.85,wr);thesis="Moderate edge on YES side";risk="MEDIUM";urgency="WAIT";}
+ else if(edge<-0.15){action="BUY_NO";confidence=Math.min(0.95,wr);thesis="Strong NO edge detected";risk="LOW";urgency="IMMEDIATE";}
+ else if(edge<-0.05){action="BUY_NO";confidence=Math.min(0.85,wr);thesis="Moderate edge on NO side";risk="MEDIUM";urgency="WAIT";}
+ else{action="SKIP";confidence=0.5;thesis="No clear edge - skip this market";risk="HIGH";urgency="MONITOR";}
+ if(wallet.total<20){risk="HIGH";urgency="MONITOR";confidence*=0.8;}
+ if(wr>0.93){confidence=Math.min(0.97,confidence*1.1);urgency=urgency==="MONITOR"?"WAIT":urgency;}
+ return{action,confidence:parseFloat(confidence.toFixed(2)),size_pct:Math.round(confidence*20),thesis,risk,urgency};
+}
  const yesPrice=parseFloat(market.outcomePrices?.[0]||0.5);
  const prompt="You are a prediction market analyst. Wallet with "+Math.round(wallet.winRate*100)+"% win rate. Market: "+market.question+" YES price: "+yesPrice+" Should we copy? Respond ONLY raw JSON no markdown: {\"action\":\"BUY_YES or BUY_NO or SKIP\",\"confidence\":0.5-0.99,\"size_pct\":1-20,\"thesis\":\"max 10 words\",\"risk\":\"LOW or MEDIUM or HIGH\",\"urgency\":\"IMMEDIATE or WAIT or MONITOR\"}";
  try{
