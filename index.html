@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CopyTrade Bot</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:monospace}
+body{background:#07070b;color:#d0d0e8;padding:0}
+.hdr{background:#0a0a10;padding:14px 16px;border-bottom:1px solid #1a1a28;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #1a1a28}
+.stat{background:#0a0a10;padding:12px;text-align:center;border-right:1px solid #1a1a28}
+.tabs{display:flex;background:#0a0a10;border-bottom:1px solid #1a1a28}
+.tab{flex:1;padding:12px;border:none;background:transparent;color:#3a3a5a;font-size:11px;letter-spacing:1px;cursor:pointer;border-bottom:2px solid transparent}
+.tab.on{background:#f0c04015;color:#f0c040;border-bottom:2px solid #f0c040}
+.btn{padding:10px 16px;border:1px solid #f0c04060;background:#f0c04020;color:#f0c040;font-size:10px;letter-spacing:1px;cursor:pointer;border-radius:6px}
+.wallet{padding:14px 16px;border-bottom:1px solid #1a1a28;display:flex;justify-content:space-between;align-items:center}
+.big-btn{width:100%;padding:14px;font-size:12px;font-weight:700;letter-spacing:2px;border:none;border-radius:8px;cursor:pointer;margin-bottom:8px}
+.card{background:#0f0f18;border:1px solid #1e1e2e;border-radius:10px;padding:14px;margin-bottom:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.cell{background:#07070b;border-radius:6px;padding:8px;text-align:center}
+</style>
+</head>
+<body>
+<div class="hdr">
+ <div>
+  <div style="font-size:13px;font-weight:700;color:#f0c040">COPYTRADE BOT</div>
+  <div style="font-size:9px;color:#3a3a5a" id="sl">CONNECTING...</div>
+ </div>
+ <span id="mb" style="font-size:9px;padding:3px 8px;border-radius:4px;background:#f0c04020;color:#f0c040">DRY RUN</span>
+</div>
+<div class="stats">
+ <div class="stat"><div style="font-size:8px;color:#3a3a5a">TRADES</div><div style="font-size:20px;font-weight:700;color:#f0c040" id="st">0</div></div>
+ <div class="stat"><div style="font-size:8px;color:#3a3a5a">WALLETS</div><div style="font-size:20px;font-weight:700;color:#00ff88" id="sw">0</div></div>
+ <div class="stat"><div style="font-size:8px;color:#3a3a5a">MODE</div><div style="font-size:11px;font-weight:700;color:#00e5ff" id="sm">-</div></div>
+</div>
+<div class="tabs">
+ <button class="tab on" id="tw" onclick="showTab('w')">WALLETS</button>
+ <button class="tab" id="ts" onclick="showTab('s')">SIGNAL</button>
+ <button class="tab" id="th" onclick="showTab('h')">HISTORY</button>
+</div>
+<div id="tw-c">
+ <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+  <div style="font-size:9px;color:#3a3a5a">TAP WALLET TO ANALYZE</div>
+  <button class="btn" onclick="loadWallets()">SCAN</button>
+ </div>
+ <div id="wl"><div style="padding:30px;text-align:center;font-size:10px;color:#3a3a5a">Loading...</div></div>
+</div>
+<div id="ts-c" style="display:none;padding:16px"><div id="sc"><div style="padding:60px 20px;text-align:center;color:#3a3a5a;font-size:11px">Tap a wallet to get a signal</div></div></div>
+<div id="th-c" style="display:none"><div id="hl"><div style="padding:40px;text-align:center;color:#3a3a5a;font-size:11px">No trades yet</div></div></div>
+<script>
+const S="https://polymarket-bot-production-0f9f.up.railway.app";
+const K="polybot123";
+let W=null,M=null,TR=[];
+function showTab(n){
+ ["w","s","h"].forEach(t=>{
+  document.getElementById("t"+t+"-c").style.display=t===n?"block":"none";
+  const b=document.getElementById("t"+t);
+  b.className="tab"+(t===n?" on":"");
+ });
+}
+async function init(){
+ try{
+  const r=await fetch(S+"/status",{headers:{"x-secret":K}});
+  const d=await r.json();
+  document.getElementById("sl").textContent=d.has_creds?"LIVE":"NO CREDS";
+  document.getElementById("sm").textContent=d.dry_run?"SIM":"LIVE";
+  if(!d.dry_run){document.getElementById("mb").textContent="LIVE";document.getElementById("mb").style.color="#ff3355";}
+ }catch(e){document.getElementById("sl").textContent="ERROR";}
+ loadWallets();
+ loadHistory();
+ setInterval(loadHistory,20000);
+}
+async function loadWallets(){
+ document.getElementById("wl").innerHTML="<div style='padding:30px;text-align:center;font-size:10px;color:#3a3a5a'>SCANNING...</div>";
+ let ws=[];
+ try{
+  const r=await fetch(S+"/leaderboard");
+  const d=await r.json();
+  if(d.ok&&d.wallets&&d.wallets.length>0)ws=d.wallets;
+ }catch(e){}
+ if(!ws.length){
+  ws=[{address:"0x3a847382ad6fff9be1db4e073fd9b869f6884d44",win_rate:0.91,wins:44,total:50},{address:"0x27e9657f2d6d9606112b29fa1ea55a0ccd3f32bb",win_rate:0.89,wins:89,total:100}];
+ }
+ window._W=ws;
+ document.getElementById("sw").textContent=ws.length;
+ document.getElementById("wl").innerHTML=ws.map((w,i)=>`
+  <div class="wallet" onclick="pick(${i})" style="cursor:pointer">
+   <div>
+    <div style="font-size:12px;color:#f0c040">${w.address.slice(0,10)}...${w.address.slice(-4)}</div>
+    <div style="font-size:9px;color:#3a3a5a;margin-top:3px">${w.wins||0} wins / ${w.total||0} trades</div>
+   </div>
+   <div style="text-align:right">
+    <div style="font-size:16px;font-weight:700;color:#00ff88">${Math.round((w.win_rate||0.88)*100)}%</div>
+    <div style="font-size:8px;color:#3a3a5a">WIN RATE</div>
+   </div>
+  </div>
+ `).join("");
+}
+async function pick(i){
+ W=window._W[i];
+ showTab("s");
+ document.getElementById("sc").innerHTML="<div style='padding:30px;text-align:center;font-size:10px;color:#00e5ff'>ANALYZING...</div>";
+ let m=null;
+ try{const r=await fetch(S+"/markets?limit=10");const d=await r.json();const ms=(d.markets||[]).filter(x=>x.question);m=ms[Math.floor(Math.random()*ms.length)];}catch(e){}
+ if(!m)m={question:"Will Bitcoin exceed $90,000 before May 2026?",outcomePrices:["0.41","0.59"]};
+ M=m;
+ const sig=analyze(W,m);
+ showSignal(W,m,sig);
+}
+function analyze(w,m){
+ const wr=w.win_rate||0.88;
+ const yp=parseFloat(m.outcomePrices?.[0]||0.5);
+ const edge=wr-yp;
+ let action,conf,thesis,risk,urgency;
+ if(edge>0.15){action="BUY_YES";conf=Math.min(0.95,wr);thesis="Strong YES edge vs market";risk="LOW";urgency="IMMEDIATE";}
+ else if(edge>0.05){action="BUY_YES";conf=Math.min(0.85,wr);thesis="Moderate YES edge detected";risk="MEDIUM";urgency="WAIT";}
+ else if(edge<-0.15){action="BUY_NO";conf=Math.min(0.95,wr);thesis="Strong NO edge vs market";risk="LOW";urgency="IMMEDIATE";}
+ else if(edge<-0.05){action="BUY_NO";conf=Math.min(0.85,wr);thesis="Moderate NO edge detected";risk="MEDIUM";urgency="WAIT";}
+ else{action="SKIP";conf=0.5;thesis="No clear edge - skip";risk="HIGH";urgency="MONITOR";}
+ if((w.total||0)<20){risk="HIGH";conf*=0.8;}
+ if(wr>0.93)conf=Math.min(0.97,conf*1.1);
+ return{action,conf:parseFloat(conf.toFixed(2)),size:Math.max(1,Math.round(conf*5)),thesis,risk,urgency};
+}
+function showSignal(w,m,s){
+ const buy=s.action!=="SKIP";
+ const yes=s.action==="BUY_YES";
+ const c=!buy?"#3a3a5a":yes?"#00ff88":"#ff3355";
+ document.getElementById("sc").innerHTML=`
+  <div class="card">
+   <div style="font-size:9px;color:#3a3a5a;margin-bottom:6px">WALLET</div>
+   <div style="font-size:12px;color:#f0c040">${w.address.slice(0,10)}...${w.address.slice(-4)}</div>
+   <div style="font-size:10px;color:#3a3a5a;margin-top:3px">${Math.round((w.win_rate||0)*100)}% win rate - ${w.total||0} trades</div>
+  </div>
+  <div class="card" style="border-color:${c}40">
+   <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+    <span style="font-size:14px;font-weight:700;color:${c}">${s.action.replace("_"," ")}</span>
+    <div>
+     <span style="font-size:9px;padding:2px 7px;border-radius:3px;background:${s.urgency==="IMMEDIATE"?"#ff335525":"#00e5ff20"};color:${s.urgency==="IMMEDIATE"?"#ff3355":"#00e5ff"};margin-right:4px">${s.urgency}</span>
+     <span style="font-size:9px;padding:2px 7px;border-radius:3px;background:${s.risk==="LOW"?"#00ff8820":"#f0c04020"};color:${s.risk==="LOW"?"#00ff88":"#f0c040"}">${s.risk}</span>
+    </div>
+   </div>
+   <div style="font-size:11px;color:#c0c0d8;margin-bottom:10px;line-height:1.5">${m.question}</div>
+   <div class="grid3">
+    <div class="cell"><div style="font-size:8px;color:#3a3a5a">CONF</div><div style="font-size:16px;font-weight:700;color:#f0c040">${Math.round(s.conf*100)}%</div></div>
+    <div class="cell"><div style="font-size:8px;color:#3a3a5a">SIZE</div><div style="font-size:16px;font-weight:700;color:#00e5ff">$${s.size}</div></div>
+    <div class="cell"><div style="font-size:8px;color:#3a3a5a">WR</div><div style="font-size:16px;font-weight:700;color:#00ff88">${Math.round((w.win_rate||0)*100)}%</div></div>
+   </div>
+   <div style="background:#07070b;border-radius:6px;padding:8px 12px;font-size:10px;color:#c0c0d8;border-left:3px solid ${c}">${s.thesis}</div>
+  </div>
+  ${buy?`<button class="big-btn" style="background:linear-gradient(135deg,${c},${c}cc);color:#07070b" onclick="exec('${s.action}',${s.conf},${s.size})">EXECUTE COPY TRADE</button>`:""}
+  <button class="big-btn" style="background:#1a1a28;color:#3a3a5a" onclick="pick(window._W.indexOf(W))">RE-ANALYZE</button>
+ `;
+}
+async function exec(action,conf,size){
+ const btn=event.target;
+ btn.textContent="SENDING...";btn.disabled=true;
+ const yp=parseFloat(M.outcomePrices?.[0]||0.5);
+ const price=action==="BUY_YES"?yp:1-yp;
+ try{
+  const r=await fetch(S+"/execute",{method:"POST",headers:{"Content-Type":"application/json","x-secret":K},body:JSON.stringify({action,confidence:conf,market_id:M.condition_id||M.id||"unknown",question:M.question,size_usd:size,price:Math.max(0.01,Math.min(0.99,price)),wallet:W.address,win_rate:W.win_rate||0.88})});
+  const d=await r.json();
+  if(d.ok){btn.textContent="SENT!";btn.style.background="#00ff8890";TR.unshift(d.trade);document.getElementById("st").textContent=TR.length;renderHistory();setTimeout(()=>showTab("h"),1500);}
+  else throw new Error(d.detail||"Error");
+ }catch(e){btn.textContent="FAILED";btn.style.background="#ff335560";setTimeout(()=>{btn.textContent="EXECUTE COPY TRADE";btn.style.background="";btn.disabled=false;},3000);}
+}
+async function loadHistory(){
+ try{
+  const r=await fetch(S+"/trades",{headers:{"x-secret":K}});
+  const d=await r.json();
+  if(d.trades){TR=d.trades.slice().reverse();document.getElementById("st").textContent=TR.length;renderHistory();}
+ }catch(e){}
+}
+function renderHistory(){
+ const l=document.getElementById("hl");
+ if(!TR.length){l.innerHTML="<div style='padding:40px;text-align:center;color:#3a3a5a;font-size:11px'>No trades yet</div>";return;}
+ l.innerHTML=TR.map(t=>`
+  <div style="padding:12px 16px;border-bottom:1px solid #1a1a28;display:flex;justify-content:space-between;align-items:center">
+   <div>
+    <div style="font-size:11px;font-weight:700;color:${t.action==="BUY_YES"?"#00ff88":"#ff3355"}">${t.action==="BUY_YES"?"▲ YES":"▼ NO"}</div>
+    <div style="font-size:9px;color:#3a3a5a;margin-top:2px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.question||"Unknown"}</div>
+   </div>
+   <div style="text-align:right">
+    <div style="font-size:11px;color:#00e5ff">$${parseFloat(t.size_usd||0).toFixed(2)}</div>
+    <div style="font-size:8px;padding:2px 5px;border-radius:3px;background:${t.dry_run?"#f0c04015":"#00ff8815"};color:${t.dry_run?"#f0c040":"#00ff88"}">${t.dry_run?"SIM":"LIVE"}</div>
+   </div>
+  </div>
+ `).join("");
+}
+window.onload=init;
+</script>
+</body>
+</html>
