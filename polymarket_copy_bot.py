@@ -130,7 +130,9 @@ async def get_leaderboard():
  try:
   async with httpx.AsyncClient(timeout=15) as c:
    r=await c.get("https://data-api.polymarket.com/leaderboard",params={"window":"1w","limit":20,"order":"profit"})
-   return{"ok":True,"wallets":r.json() if r.status_code==200 else [],"count":0}
+   d=r.json() if r.status_code==200 else {}
+   wallets=d.get("leaderboard",d) if isinstance(d,dict) else d
+   return{"ok":True,"wallets":wallets,"count":len(wallets) if isinstance(wallets,list) else 0}
  except Exception as e:
   return{"ok":False,"error":str(e),"wallets":[]}
 @app.get("/trades")
