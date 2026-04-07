@@ -129,7 +129,7 @@ function seedWallets(count){
 function renderWallets(wallets){
  const list=document.getElementById("walletList");
  list.innerHTML=wallets.map((w,i)=>`
-  <div onclick="selectWallet(${i})" style="display:grid;grid-template-columns:24px 1fr 56px 50px;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid #1a1a28;cursor:pointer" onmouseenter="this.style.background='#f0c04008'" onmouseleave="this.style.background='transparent'">
+   <div onclick="selectWallet(${i})" style="cursor:pointer;-webkit-tap-highlight-color:rgba(240,192,64,0.2)"style="display:grid;grid-template-columns:24px 1fr 56px 50px;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid #1a1a28;cursor:pointer" onmouseenter="this.style.background='#f0c04008'" onmouseleave="this.style.background='transparent'">
    <span style="font-size:11px;color:${i<3?"#f0c040":"#3a3a5a"}">${i<3?["🥇","🥈","🥉"][i]:"#"+(i+1)}</span>
    <div>
     <div style="font-size:11px;color:${w.winRate>=0.95?"#f0c040":w.winRate>=0.92?"#00e5ff":"#c0c0d8"}">${w.addr}</div>
