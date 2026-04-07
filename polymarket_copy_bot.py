@@ -3,6 +3,8 @@ from datetime import datetime,timezone
 from typing import Optional
 import httpx
 from fastapi import FastAPI,HTTPException,Header
+from fastapi.responses import HTMLResponse
+import pathlib
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -117,3 +119,9 @@ async def get_trades(x:Optional[str]=Header(None)):
 @app.on_event("startup")
 async def startup():
     log.info(f"Bot started DRY={DRY} MIN_WR={MIN_WR} MAX={MAX_SZ} CREDS={'yes' if API_KEY else 'no'}")
+@app.get("/",response_class=HTMLResponse)
+async def ui():
+    p=pathlib.Path("index.html")
+    if p.exists():
+        return p.read_text()
+    return "<h1>index.html not found</h1>"
