@@ -149,6 +149,7 @@ function renderWallets(wallets){
 </script>
 <script>
 async function selectWallet(i){
+  if(!window._wallets||!window._wallets[i])return;
  const w=window._wallets[i];
  selectedWallet=w;
  showTab("signal");
