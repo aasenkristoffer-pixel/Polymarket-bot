@@ -74,11 +74,13 @@ def check(s:Signal):
 @app.get("/status")
 async def status():
     return {"ok":True,"dry_run":DRY,"has_creds":bool(API_KEY and PK),"min_wr":MIN_WR,"max_order":MAX_SZ,"trades":len(trades)}
-@app.get("/markets")
-async def get_markets(limit:int=30):
+@app.get("/wallet/{address}")
+async def get_wallet_stats(address:str):
     try:
-        m=await markets(limit)
-        return {"markets":m,"count":len(m)}
+        stats=await score(address)
+        trades=await wallet_trades(address,200)
+        recent=[{"side":t.get("side"),"price":float(t.get("price",0)),"size":float(t.get("size",0)),"market":t.get("market","")} for t in trades[:10]]
+        return{"ok":True,"address":address,"wins":stats["wins"],"total":stats["total"],"win_rate":stats["win_rate"],"volume":stats["volume"],"pnl":stats["pnl"],"recent_trades":recent}
     except Exception as e:
         raise HTTPException(502,str(e))
 @app.post("/wallets/score")
