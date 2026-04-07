@@ -129,7 +129,17 @@ function seedWallets(count){
 function renderWallets(wallets){
  const list=document.getElementById("walletList");
  list.innerHTML=wallets.map((w,i)=>`
-   <div onclick="selectWallet(${i})" style="cursor:pointer;-webkit-tap-highlight-color:rgba(240,192,64,0.2)"style="display:grid;grid-template-columns:24px 1fr 56px 50px;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid #1a1a28;cursor:pointer" onmouseenter="this.style.background='#f0c04008'" onmouseleave="this.style.background='transparent'">
+ <div onclick="selectWallet(${i})" style="padding:14px 16px;border-bottom:1px solid #1a1a28;cursor:pointer;active:background:#f0c04010">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+   <span style="font-size:12px;color:${w.winRate>=0.95?"#f0c040":w.winRate>=0.92?"#00e5ff":"#c0c0d8"}">${i<3?["🥇","🥈","🥉"][i]:"#"+(i+1)} ${w.addr}</span>
+   <span style="font-size:14px;font-weight:700;color:#00ff88">${Math.round(w.winRate*100)}%</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+   <span style="font-size:9px;background:#f0c04015;color:#f0c040;padding:2px 6px;border-radius:3px">${(w.tags||["REAL"])[0]}</span>
+   <span style="font-size:9px;color:#3a3a5a">${w.total||0} trades</span>
+  </div>
+ </div>
+`).join("");
    <span style="font-size:11px;color:${i<3?"#f0c040":"#3a3a5a"}">${i<3?["🥇","🥈","🥉"][i]:"#"+(i+1)}</span>
    <div>
     <div style="font-size:11px;color:${w.winRate>=0.95?"#f0c040":w.winRate>=0.92?"#00e5ff":"#c0c0d8"}">${w.addr}</div>
