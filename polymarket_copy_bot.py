@@ -45,8 +45,17 @@ async def markets(n=50):
         return d if isinstance(d,list) else d.get("markets",[])
 async def wallet_trades(addr,n=200):
     async with httpx.AsyncClient(timeout=15) as c:
-        r=await c.get(f"{CLOB}/trades",params={"maker_address":addr,"limit":n})
-        return r.json().get("data",[]) if r.status_code==200 else []
+        r=await c.get(f"https://data-api.polymarket.com/trades",params={"user":addr,"limit":n})
+        return r.json() if r.status_code==200 else []
+
+async def get_proxy_address(addr):
+    async with httpx.AsyncClient(timeout=10) as c:
+        r=await c.get(f"https://data-api.polymarket.com/profiles",params={"address":addr})
+        if r.status_code==200:
+            d=r.json()
+            if isinstance(d,list) and len(d)>0:
+                return d[0].get("proxyWallet",addr)
+        return addr
 async def score(addr):
     ts=await wallet_trades(addr)
     w=t=0
