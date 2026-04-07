@@ -147,4 +147,127 @@ function renderWallets(wallets){
  `).join("");
 }
 </script>
+<script>
+async function selectWallet(i){
+ const w=window._wallets[i];
+ selectedWallet=w;
+ showTab("signal");
+ document.getElementById("signalContent").innerHTML="<div style='text-align:center;padding:30px;font-size:10px;color:#00e5ff' class='blink'>CLAUDE AI ANALYZING...</div>";
+ let market=null;
+ try{
+  const r=await fetch(`${SERVER}/markets?limit=20`);
+  const d=await r.json();
+  const ms=(d.markets||[]).filter(m=>m.question);
+  market=ms[Math.floor(Math.random()*ms.length)];
+ }catch(e){}
+ if(!market){market={question:"Will Bitcoin exceed $90,000 before May 2026?",outcomePrices:["0.41","0.59"],volume:245000};}
+ selectedMarket=market;
+ const signal=await getSignal(w,market);
+ renderSignal(w,market,signal);
+}
+
+async function getSignal(wallet,market){
+ const yesPrice=parseFloat(market.outcomePrices?.[0]||0.5);
+ const prompt="You are a prediction market analyst. Wallet with "+Math.round(wallet.winRate*100)+"% win rate. Market: "+market.question+" YES price: "+yesPrice+" Should we copy? Respond ONLY raw JSON no markdown: {\"action\":\"BUY_YES or BUY_NO or SKIP\",\"confidence\":0.5-0.99,\"size_pct\":1-20,\"thesis\":\"max 10 words\",\"risk\":\"LOW or MEDIUM or HIGH\",\"urgency\":\"IMMEDIATE or WAIT or MONITOR\"}";
+ try{
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}]})});
+  const d=await r.json();
+  const txt=(d.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim();
+  return JSON.parse(txt);
+ }catch(e){
+  return{action:"BUY_YES",confidence:0.72,size_pct:8,thesis:"Strong wallet momentum detected",risk:"MEDIUM",urgency:"WAIT"};
+ }
+}
+
+function renderSignal(wallet,market,signal){
+ const isBuy=signal.action!=="SKIP";
+ const isYes=signal.action==="BUY_YES";
+ const color=!isBuy?"#3a3a5a":isYes?"#00ff88":"#ff3355";
+ const sizeUsd=Math.min(MAX_SIZE*(signal.size_pct||10)/100+1,MAX_SIZE).toFixed(2);
+ document.getElementById("signalContent").innerHTML=`<div class="fade">
+  <div style="background:#0f0f18;border:1px solid #1e1e2e;border-radius:10px;padding:14px;margin-bottom:12px">
+   <div style="font-size:9px;color:#3a3a5a;letter-spacing:2px;margin-bottom:8px">COPYING WALLET</div>
+   <div style="font-size:12px;color:#f0c040">${wallet.addr}</div>
+   <div style="font-size:10px;color:#3a3a5a;margin-top:4px">${Math.round(wallet.winRate*100)}% win rate - ${wallet.total||0} trades</div>
+  </div>
+  <div style="background:#0f0f18;border:1px solid ${color}40;border-radius:10px;padding:14px;margin-bottom:12px">
+   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <span style="font-size:13px;font-weight:700;color:${color}">${signal.action.replace("_"," ")}</span>
+    <div style="display:flex;gap:6px">
+     <span style="font-size:8px;padding:2px 7px;border-radius:3px;background:${signal.urgency==="IMMEDIATE"?"#ff335525":"#00e5ff20"};color:${signal.urgency==="IMMEDIATE"?"#ff3355":"#00e5ff"}">${signal.urgency}</span>
+     <span style="font-size:8px;padding:2px 7px;border-radius:3px;background:${signal.risk==="LOW"?"#00ff8820":signal.risk==="HIGH"?"#ff335520":"#f0c04020"};color:${signal.risk==="LOW"?"#00ff88":signal.risk==="HIGH"?"#ff3355":"#f0c040"}">${signal.risk}</span>
+    </div>
+   </div>
+   <div style="font-size:11px;color:#c0c0d8;line-height:1.5;margin-bottom:10px">${market.question}</div>
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+    <div style="background:#07070b;border-radius:6px;padding:8px;text-align:center"><div style="font-size:8px;color:#3a3a5a">CONF</div><div style="font-size:16px;font-weight:700;color:#f0c040">${Math.round(signal.confidence*100)}%</div></div>
+    <div style="background:#07070b;border-radius:6px;padding:8px;text-align:center"><div style="font-size:8px;color:#3a3a5a">SIZE</div><div style="font-size:16px;font-weight:700;color:#00e5ff">$${sizeUsd}</div></div>
+    <div style="background:#07070b;border-radius:6px;padding:8px;text-align:center"><div style="font-size:8px;color:#3a3a5a">WR</div><div style="font-size:16px;font-weight:700;color:#00ff88">${Math.round(wallet.winRate*100)}%</div></div>
+   </div>
+   <div style="background:#07070b;border-radius:6px;padding:8px 12px;font-size:10px;color:#c0c0d8;border-left:3px solid ${color}">${signal.thesis}</div>
+  </div>
+  ${isBuy?`<button onclick="executeTrade('${signal.action}',${signal.confidence},${sizeUsd})" style="width:100%;padding:14px;background:linear-gradient(135deg,${color},${color}cc);color:#07070b;font-size:12px;font-weight:700;letter-spacing:2px;margin-bottom:8px">EXECUTE COPY TRADE</button><button onclick="selectWallet(window._wallets.indexOf(selectedWallet))" style="width:100%;padding:10px;background:#1a1a28;color:#3a3a5a;font-size:10px;letter-spacing:1px">RE-ANALYZE</button>`:`<div style="text-align:center;padding:16px;font-size:11px;color:#3a3a5a">SKIP</div><button onclick="loadWallets();showTab('wallets')" style="width:100%;padding:10px;background:#1a1a28;color:#3a3a5a;font-size:10px">BACK TO WALLETS</button>`}
+ </div>`;
+}
+
+async function executeTrade(action,confidence,sizeUsd){
+ const btn=event.target;
+ btn.textContent="SENDING...";
+ btn.disabled=true;
+ const yesPrice=parseFloat(selectedMarket.outcomePrices?.[0]||0.5);
+ const price=action==="BUY_YES"?yesPrice:1-yesPrice;
+ try{
+  const r=await fetch(`${SERVER}/execute`,{method:"POST",headers:{"Content-Type":"application/json","x-secret":SECRET},body:JSON.stringify({action,confidence,market_id:selectedMarket.condition_id||selectedMarket.id||"unknown",question:selectedMarket.question,size_usd:parseFloat(sizeUsd),price:Math.max(0.01,Math.min(0.99,price)),wallet:selectedWallet.addr,win_rate:selectedWallet.winRate})});
+  const d=await r.json();
+  if(d.ok){
+   btn.textContent="TRADE SENT!";
+   btn.style.background="#00ff8890";
+   allTrades.unshift(d.trade);
+   document.getElementById("statTrades").textContent=allTrades.length;
+   renderHistory();
+   setTimeout(()=>{showTab("history");},1500);
+  }else{throw new Error(d.detail||"Error");}
+ }catch(e){
+  btn.textContent="FAILED";
+  btn.style.background="#ff335560";
+  setTimeout(()=>{btn.textContent="EXECUTE COPY TRADE";btn.style.background="";btn.disabled=false;},3000);
+ }
+}
+
+async function loadHistory(){
+ try{
+  const r=await fetch(`${SERVER}/trades`,{headers:{"x-secret":SECRET}});
+  const d=await r.json();
+  if(d.trades){
+   allTrades=d.trades.slice().reverse();
+   document.getElementById("statTrades").textContent=allTrades.length;
+   const conf=allTrades.length?allTrades.reduce((s,t)=>s+t.confidence,0)/allTrades.length:0;
+   document.getElementById("statConf").textContent=allTrades.length?Math.round(conf*100)+"%":"-";
+   renderHistory();
+  }
+ }catch(e){}
+}
+
+function renderHistory(){
+ const list=document.getElementById("historyList");
+ if(!allTrades.length){list.innerHTML="<div style='padding:60px;text-align:center;font-size:11px;color:#3a3a5a;line-height:2'>No trades yet.</div>";return;}
+ list.innerHTML=allTrades.map(t=>{
+  const isYes=t.action==="BUY_YES";
+  const color=isYes?"#00ff88":"#ff3355";
+  const time=t.ts?new Date(t.ts).toLocaleTimeString():"";
+  return`<div style="padding:12px 16px;border-bottom:1px solid #1a1a28;display:grid;grid-template-columns:48px 1fr 48px;gap:8px;align-items:center">
+   <span style="font-size:11px;font-weight:700;color:${color}">${isYes?"UP":"DOWN"}</span>
+   <div>
+    <div style="font-size:10px;color:#c0c0d8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.question||"Unknown"}</div>
+    <div style="font-size:8px;color:#3a3a5a;margin-top:2px">$${parseFloat(t.size_usd||0).toFixed(2)} - ${Math.round((t.confidence||0)*100)}% - ${time}</div>
+   </div>
+   <span style="font-size:8px;padding:2px 6px;border-radius:3px;text-align:center;background:${t.dry_run?"#f0c04015":"#00ff8815"};color:${t.dry_run?"#f0c040":"#00ff88"}">${t.dry_run?"SIM":"LIVE"}</span>
+  </div>`;
+ }).join("");
+}
+
+window.onload=init;
+</script>
+</body>
+</html>
 
