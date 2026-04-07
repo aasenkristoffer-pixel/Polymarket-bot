@@ -128,7 +128,7 @@ async def cancel(r:Cancel,x:Optional[str]=Header(None)):
 @app.get("/debug")
 async def debug():
  async with httpx.AsyncClient(timeout=15) as c:
-  r=await c.get("https://gamma-api.polymarket.com/profiles",params={"limit":5,"sortBy":"profit","window":"1w"})
+  r=await c.get("https://data-api.polymarket.com/activity",params={"limit":5})
   return{"status":r.status_code,"raw":r.text[:500]}
 @app.get("/leaderboard")
 async def get_leaderboard():
