@@ -170,7 +170,7 @@ async function getSignal(wallet,market){
  const yesPrice=parseFloat(market.outcomePrices?.[0]||0.5);
  const prompt="You are a prediction market analyst. Wallet with "+Math.round(wallet.winRate*100)+"% win rate. Market: "+market.question+" YES price: "+yesPrice+" Should we copy? Respond ONLY raw JSON no markdown: {\"action\":\"BUY_YES or BUY_NO or SKIP\",\"confidence\":0.5-0.99,\"size_pct\":1-20,\"thesis\":\"max 10 words\",\"risk\":\"LOW or MEDIUM or HIGH\",\"urgency\":\"IMMEDIATE or WAIT or MONITOR\"}";
  try{
-  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}]})});
+  const r=await fetch(`${SERVER}/analyze`,{method:"POST",headers:{"Content-Type":"application/json","x-secret":SECRET},body:JSON.stringify({wallet_addr:wallet.addr,win_rate:wallet.winRate,total:wallet.total,market:market.question,yes_price:parseFloat(market.outcomePrices?.[0]||0.5)})});
   const d=await r.json();
   const txt=(d.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim();
   return JSON.parse(txt);
