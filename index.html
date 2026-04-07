@@ -100,14 +100,13 @@ button{cursor:pointer;font-family:'JetBrains Mono',monospace;border:none;border-
   </div>
 </div>
 <script>
-let SERVER="";
-let SECRET="";
+let SERVER="https://polymarket-bot-production-0f9f.up.railway.app";
+let SECRET="polybot123";
 let MIN_WR=0.88;
 let MAX_SIZE=5;
 let selectedWallet=null;
 let selectedMarket=null;
 let allTrades=[];
-
 function seedWallets(count){
   const addrs=["0x4f2a","0x8c91","0x1d3e","0x7b44","0x2f9a","0x5e1c","0x9d3f","0xae72","0x3c85","0x6f1d","0xb203","0x0e94","0x7a5b","0xc341","0x4891","0x2d7f","0x9c2e","0x5f83","0x1b6a","0x8e05","0x3a9c","0x6d4e","0xd172","0x0b58","0x7e31"];
   return addrs.slice(0,count).map((a,i)=>{
