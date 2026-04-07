@@ -87,8 +87,9 @@ async def status():
 @app.get("/wallet/{address}")
 async def get_wallet_stats(address:str):
     try:
+        proxy=await get_proxy_address(address)
         stats=await score(address)
-        trades=await wallet_trades(address,200)
+        trades=await wallet_trades(proxy,200)
         recent=[{"side":t.get("side"),"price":float(t.get("price",0)),"size":float(t.get("size",0)),"market":t.get("market","")} for t in trades[:10]]
         return{"ok":True,"address":address,"wins":stats["wins"],"total":stats["total"],"win_rate":stats["win_rate"],"volume":stats["volume"],"pnl":stats["pnl"],"recent_trades":recent}
     except Exception as e:
