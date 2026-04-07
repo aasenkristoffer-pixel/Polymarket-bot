@@ -158,7 +158,7 @@ async function exec(action,conf,size){
  const yp=parseFloat(M.outcomePrices?.[0]||0.5);
  const price=action==="BUY_YES"?yp:1-yp;
  try{
-  const r=await fetch(S+"/execute",{method:"POST",headers:{"Content-Type":"application/json","x-secret":K},body:JSON.stringify({action,confidence:conf,market_id:M.condition_id||M.id||"unknown",question:M.question,size_usd:size,price:Math.max(0.01,Math.min(0.99,price)),wallet:W.address,win_rate:W.win_rate||0.88})});
+  const r=await fetch(S+"/sign",{method:"POST",headers:{"Content-Type":"application/json","x-secret":K},body:JSON.stringify({side:action==="BUY_YES"?"BUY":"SELL",token_id:M.tokens?.[0]?.token_id||M.condition_id||"",price:Math.max(0.01,Math.min(0.99,price)),size:size})
   const d=await r.json();
   if(d.ok){btn.textContent="SENT!";btn.style.background="#00ff8890";TR.unshift(d.trade);document.getElementById("st").textContent=TR.length;renderHistory();setTimeout(()=>showTab("h"),1500);}
   else throw new Error(d.detail||"Error");
