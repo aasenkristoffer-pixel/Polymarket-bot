@@ -78,6 +78,7 @@ function showTab(name){
   btn.style.borderBottom=t===name?"2px solid #f0c040":"2px solid transparent";
  });
 }
+
 async function init(){
  try{
   const r=await fetch(`${SERVER}/status`,{headers:{"x-secret":SECRET}});
@@ -96,6 +97,7 @@ async function init(){
  loadHistory();
  setInterval(loadHistory,15000);
 }
+
 async function loadWallets(){
  const list=document.getElementById("walletList");
  list.innerHTML="<div style='padding:30px;text-align:center;font-size:10px;color:#3a3a5a' class='blink'>SCANNING LIVE POLYMARKET DATA...</div>";
@@ -114,6 +116,7 @@ async function loadWallets(){
  window._wallets=wallets;
  renderWallets(wallets);
 }
+
 function seedWallets(count){
  const addrs=["0x4f2a","0x8c91","0x1d3e","0x7b44","0x2f9a","0x5e1c","0x9d3f","0xae72","0x3c85","0x6f1d","0xb203","0x0e94","0x7a5b","0xc341","0x4891","0x2d7f","0x9c2e","0x5f83","0x1b6a","0x8e05"];
  return addrs.slice(0,count).map((a,i)=>{
@@ -122,6 +125,7 @@ function seedWallets(count){
   return{addr:a+"...f"+((i+1).toString(16).padStart(3,"0")),winRate:wr,wins:Math.floor(total*wr),total,pnl:(5000+Math.random()*90000)*(wr-0.5)*0.4,tags:wr>0.95?["ELITE"]:wr>0.92?["SHARP"]:["CONSISTENT"],real:false};
  }).sort((a,b)=>b.winRate-a.winRate);
 }
+
 function renderWallets(wallets){
  const list=document.getElementById("walletList");
  list.innerHTML=wallets.map((w,i)=>`
@@ -143,3 +147,4 @@ function renderWallets(wallets){
  `).join("");
 }
 </script>
+
