@@ -132,38 +132,36 @@ async def debug():
   return{"status":r.status_code,"raw":r.text[:500]}
 @app.get("/leaderboard")
 async def get_leaderboard():
- TOP_WALLETS=[
-  "0x3a847382ad6fff9be1db4e073fd9b869f6884d44",
-  "0x3d9e4992d4b66a884b3e36f0e2e82d61e01ed0f0",
-  "0x9a0b37dfce1a92cd6fcabdc6be0d7e17ade3c490",
-  "0xf1e0f79f252f03f8dc9c29d9a2c3e87e85f9c4a1",
-  "0x2b6e8c4d9a3f1e7b0c5d8a2f4e6b9c1d3f5a7e2",
-  "0x7c3a1f9e2d5b8c0e4a7f2b6d9c3e1a5f8b2d4c6",
-  "0x5e2d8a4f7b1c6e9d3a0f5c8b2e4d7a1f6c3b9e5",
-  "0x1a9f3e6b0d8c5a2f7e4b9c1d3f6a0e2b5d8c4a7",
-  "0x8b4d2a7f5c1e9b3d6a0f4c8e2b7d5a3f9c1e6b0",
-  "0x4f7a2e9c6b1d8f3a5e0c7b4d2f6a9e1c8b3d5f7",
- ]
- results=[]
- for addr in TOP_WALLETS:
-  try:
-   async with httpx.AsyncClient(timeout=10) as c:
-    r=await c.get("https://data-api.polymarket.com/trades",params={"user":addr,"limit":50})
-    ts=r.json() if r.status_code==200 else []
-    if not isinstance(ts,list):ts=[]
-    w=t=0
-    for x in ts:
-     t+=1
+ try:
+  async with httpx.AsyncClient(timeout=15) as c:
+   r=await c.get("https://data-api.polymarket.com/trades",params={"limit":500,"filterType":"CASH"})
+   ts=r.json() if r.status_code==200 else []
+   if not isinstance(ts,list):ts=[]
+   wallets={}
+   for t in ts:
+    addr=t.get("proxyWallet","")
+    if not addr:continue
+    if addr not in wallets:wallets[addr]={"address":addr,"name":t.get("name",""),"trades":[],"wins":0,"total":0}
+    wallets[addr]["trades"].append(t)
+   scored=[]
+   for addr,w in list(wallets.items())[:30]:
+    r2=await c.get("https://data-api.polymarket.com/trades",params={"user":addr,"limit":100,"filterType":"CASH"})
+    ut=r2.json() if r2.status_code==200 else []
+    if not isinstance(ut,list):ut=[]
+    wins=total=0
+    for x in ut:
+     total+=1
      px=float(x.get("price",0.5))
-     op=float(x.get("outcomeIndex",0))
-     if px<0.5 and op==0:w+=1
-     elif px>0.5 and op==1:w+=1
-    wr=w/t if t>0 else 0.88
-    results.append({"address":addr,"wins":w,"total":t,"win_rate":wr,"meets_threshold":wr>=MIN_WR})
-  except Exception:
-   results.append({"address":addr,"wins":0,"total":0,"win_rate":0.88,"meets_threshold":True})
- results.sort(key=lambda x:x["win_rate"],reverse=True)
- return{"ok":True,"wallets":results,"count":len(results)}
+     side=x.get("side","")
+     if side=="BUY" and px<0.5:wins+=1
+     elif side=="SELL" and px>0.5:wins+=1
+    wr=wins/total if total>0 else 0
+    if wr>=MIN_WR:
+     scored.append({"address":addr,"name":w.get("name",""),"wins":wins,"total":total,"win_rate":wr,"meets_threshold":True})
+   scored.sort(key=lambda x:x["win_rate"],reverse=True)
+   return{"ok":True,"wallets":scored[:20],"count":len(scored)}
+ except Exception as e:
+  return{"ok":False,"error":str(e),"wallets":[]}
 @app.get("/trades")
 async def get_trades(x:Optional[str]=Header(None)):
     auth(x)
