@@ -172,6 +172,35 @@ function showTab(name){
 }
 
 async function loadWallets(){
+ const list=document.getElementById("walletList");
+ list.innerHTML="<div style='padding:30px;text-align:center;font-size:10px;color:#3a3a5a' class='blink'>SCANNING LIVE POLYMARKET DATA...</div>";
+ let wallets=[];
+ try{
+  const r=await fetch(`${SERVER}/leaderboard`);
+  const d=await r.json();
+  if(d.ok&&d.wallets&&d.wallets.length>0){
+   wallets=d.wallets.map(w=>({
+    addr:w.address.slice(0,10)+"..."+w.address.slice(-4),
+    fullAddr:w.address,
+    winRate:w.win_rate,
+    wins:w.wins,
+    total:w.total,
+    volume:0,
+    pnl:0,
+    streak:0,
+    tags:w.win_rate>=0.95?["ELITE","REAL"]:w.win_rate>=0.90?["SHARP","REAL"]:["REAL"],
+    real:true,
+    name:w.name||"",
+   }));
+  }
+ }catch(e){}
+ if(wallets.length===0){
+  wallets=await seedWallets(20);
+ }
+ document.getElementById("statWallets").textContent=wallets.length;
+ window._wallets=wallets;
+ renderWallets(wallets);
+}
   const list=document.getElementById("walletList");
   list.innerHTML="<div style='padding:30px;text-align:center;font-size:10px;color:#3a3a5a' class='blink'>SCANNING POLYMARKET...</div>";
   const wallets=seedWallets(25);
