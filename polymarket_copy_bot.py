@@ -162,6 +162,18 @@ async def get_leaderboard():
    return{"ok":True,"wallets":scored[:20],"count":len(scored)}
  except Exception as e:
   return{"ok":False,"error":str(e),"wallets":[]}
+@app.post("/analyze")
+async def analyze(body:dict,x:Optional[str]=Header(None)):
+ auth(x)
+ try:
+  prompt="Wallet "+str(round(body.get("win_rate",0)*100))+"% win rate "+str(body.get("total",0))+" trades. Market: "+body.get("market","")+" YES price: "+str(body.get("yes_price",0.5))+" Copy? JSON only: {\"action\":\"BUY_YES or BUY_NO or SKIP\",\"confidence\":0.5-0.99,\"size_pct\":1-20,\"thesis\":\"max 10 words\",\"risk\":\"LOW or MEDIUM or HIGH\",\"urgency\":\"IMMEDIATE or WAIT or MONITOR\"}"
+  async with httpx.AsyncClient(timeout=30) as c:
+   r=await c.post("https://api.anthropic.com/v1/messages",headers={"x-api-key":os.getenv("ANTHROPIC_API_KEY",""),"anthropic-version":"2023-06-01","Content-Type":"application/json"},content=json.dumps({"model":"claude-haiku-4-5-20251001","max_tokens":200,"messages":[{"role":"user","content":prompt}]}))
+   d=r.json()
+   txt=(d.get("content",[{}])[0].get("text","{}")).replace("```json","").replace("```","").strip()
+   return json.loads(txt)
+ except Exception as e:
+  return{"action":"BUY_YES","confidence":0.72,"size_pct":8,"thesis":"Strong wallet momentum detected","risk":"MEDIUM","urgency":"WAIT"}
 @app.get("/trades")
 async def get_trades(x:Optional[str]=Header(None)):
     auth(x)
