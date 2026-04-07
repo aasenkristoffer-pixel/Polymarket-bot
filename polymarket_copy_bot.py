@@ -125,25 +125,6 @@ async def cancel(r:Cancel,x:Optional[str]=Header(None)):
     auth(x)
     if r.order_id in orders:orders[r.order_id]["status"]="cancelled"
     return {"ok":True,"cancelled":r.order_id}
-    @app.get("/leaderboard")
-async def get_leaderboard(period:str="1w",limit:int=20):
-    try:
-        async with httpx.AsyncClient(timeout=15) as c:
-            r=await c.get("https://data-api.polymarket.com/leaderboard",params={"window":period,"limit":limit,"order":"profit"})
-            if r.status_code!=200:
-                raise Exception(f"Status {r.status_code}")
-            wallets=r.json()
-            results=[]
-            for w in wallets[:limit]:
-                addr=w.get("proxyWallet") or w.get("address","")
-                if not addr:
-                    continue
-                stats=await score(addr)
-                results.append({"address":addr,"name":w.get("name",""),"profit":w.get("profit",0),"volume":w.get("volume",0),"win_rate":stats["win_rate"],"wins":stats["wins"],"total":stats["total"],"pnl":stats["pnl"],"meets_threshold":stats["win_rate"]>=MIN_WR})
-            results.sort(key=lambda x:x["win_rate"],reverse=True)
-            return{"ok":True,"period":period,"wallets":results,"count":len(results)}
-    except Exception as e:
-        raise HTTPException(502,str(e))
 @app.get("/trades")
 async def get_trades(x:Optional[str]=Header(None)):
     auth(x)
