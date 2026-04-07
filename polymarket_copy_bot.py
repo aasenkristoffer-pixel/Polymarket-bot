@@ -128,7 +128,7 @@ async def cancel(r:Cancel,x:Optional[str]=Header(None)):
 @app.get("/debug")
 async def debug():
  async with httpx.AsyncClient(timeout=15) as c:
-  r=await c.get("https://data-api.polymarket.com/trades",params={"user":"0x3a847382ad6fff9be1db4e073fd9b869f6884d44","limit":5})
+  r=await c.get("https://predicting.top/api/leaderboard",params={"limit":20,"period":"weekly"})
   return{"status":r.status_code,"raw":r.text[:500]}
 @app.get("/leaderboard")
 async def get_leaderboard():
